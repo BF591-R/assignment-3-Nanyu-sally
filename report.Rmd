@@ -168,27 +168,7 @@ When implementing, remember:
 deals with data.frames. Utilize `dplyr::pull()` to transform a tibble to a
 character vector, and `dplyr::as_tibble()` for converting a data frame back to a
 tibble.
-```{r affy_to_hgnc}
-# 1. 随便选 3 个探针 ID
-test_ids <- c("202860_at", "1553551_s_at", "204340_at")
 
-# 2. 用最原始的方式连接（不带镜像）
-mart <- biomaRt::useEnsembl(
-  biomart = "ensembl",
-  dataset = "hsapiens_gene_ensembl",
-  mirror  = "useast"
-)
-
-# 3. 只查这 3 个，看它几秒钟能不能出结果
-test_mapping <- biomaRt::getBM(
-  attributes = c("affy_hg_u133_plus_2", "hgnc_symbol"),
-  filters = "affy_hg_u133_plus_2",
-  values = test_ids,
-  mart = mart
-)
-
-print(test_mapping)
-```
 
 ```{r affy_to_hgnc}
 # Converting a sample affy ID to HGNC
