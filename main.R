@@ -35,7 +35,9 @@ suppressPackageStartupMessages(library(tidyverse))
 #' @examples 
 #' `data <- load_expression('/project/bf528/project_1/data/example_intensity_data.csv')`
 load_expression <- function(filepath) {
-    return(NULL)
+  dat <- readr::read_csv(filepath, show_col_types = FALSE)
+  colnames(dat)[1] <- "probe"
+    return(dat)
 }
 
 #' Filter 15% of the gene expression values.
@@ -51,7 +53,15 @@ load_expression <- function(filepath) {
 #' `tibble [40,158 × 1] (S3: tbl_df/tbl/data.frame)`
 #' `$ probe: chr [1:40158] "1007_s_at" "1053_at" "117_at" "121_at" ...`
 filter_15 <- function(tibble){
-    return(NULL)
+  threshold_val <- log2(15)  
+  numeric_data <- tibble %>% dplyr::select(-probe)
+
+  num_samples <- ncol(numeric_data)
+  passing_count <- 0.15 * num_samples
+
+  keep_rows <- rowSums(numeric_data > threshold_val) >= passing_count
+  result <- tibble[keep_rows, "probe"]
+    return(result)
 }
 
 #### Gene name conversion ####
@@ -79,7 +89,23 @@ filter_15 <- function(tibble){
 #' `4        1553551_s_at      MT-ND2`
 #' `5           202860_at     DENND4B`
 affy_to_hgnc <- function(affy_vector) {
-    return(NULL)
+  affy_ids <- dplyr::pull(affy_vector, 1)
+
+  mart <- biomaRt::useMart(
+    biomart = "ENSEMBL_MART_ENSEMBL", 
+    dataset = "hsapiens_gene_ensembl",
+    host = "https://useast.ensembl.org" 
+  )
+  
+  mapping <- biomaRt::getBM(
+    attributes = c("affy_hg_u133_plus_2", "hgnc_symbol"),
+    filters = "affy_hg_u133_plus_2",
+    values = affy_ids,
+    mart = mart
+  )
+  
+  result <- tibble::as_tibble(mapping)
+    return(result)
 }
 
 #' Reduce a tibble of expression data to only the rows in good_genes or bad_genes.
@@ -112,7 +138,22 @@ affy_to_hgnc <- function(affy_vector) {
 #' `1 202860_at   DENND4B good        7.16      ...`
 #' `2 204340_at   TMEM187 good        6.40      ...`
 reduce_data <- function(expr_tibble, names_ids, good_genes, bad_genes){
-    return(NULL)
+  joined_tab <- expr_tibble %>%
+    dplyr::inner_join(names_ids, by = c("probe" = colnames(names_ids)[1])) %>%
+    dplyr::rename(hgnc = hgnc_symbol) 
+ 
+  result <- joined_tab %>%
+    dplyr::mutate(
+      gene_set = dplyr::case_when(
+        hgnc %in% good_genes ~ "good",
+        hgnc %in% bad_genes  ~ "bad",
+        TRUE ~ NA_character_ 
+      )
+    ) %>%
+    
+    dplyr::filter(!is.na(gene_set)) %>%
+    dplyr::select(probe, hgnc, gene_set, everything())
+    return(result)
 }
 
 #' Convert a wide format tibble to long for easy plotting
@@ -126,6 +167,12 @@ reduce_data <- function(expr_tibble, names_ids, good_genes, bad_genes){
 #'
 #' @examples
 convert_to_long <- function(tibble) {
-    return(NULL)
+  result <- tibble %>%
+    tidyr::pivot_longer(
+      cols = -c(probe, hgnc, gene_set),
+      names_to = "sample",
+      values_to = "values"
+    )
+    return(result)
 }
 

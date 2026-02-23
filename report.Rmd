@@ -169,6 +169,28 @@ deals with data.frames. Utilize `dplyr::pull()` to transform a tibble to a
 character vector, and `dplyr::as_tibble()` for converting a data frame back to a
 tibble.
 ```{r affy_to_hgnc}
+# 1. 随便选 3 个探针 ID
+test_ids <- c("202860_at", "1553551_s_at", "204340_at")
+
+# 2. 用最原始的方式连接（不带镜像）
+mart <- biomaRt::useEnsembl(
+  biomart = "ensembl",
+  dataset = "hsapiens_gene_ensembl",
+  mirror  = "useast"
+)
+
+# 3. 只查这 3 个，看它几秒钟能不能出结果
+test_mapping <- biomaRt::getBM(
+  attributes = c("affy_hg_u133_plus_2", "hgnc_symbol"),
+  filters = "affy_hg_u133_plus_2",
+  values = test_ids,
+  mart = mart
+)
+
+print(test_mapping)
+```
+
+```{r affy_to_hgnc}
 # Converting a sample affy ID to HGNC
 filter_15(result_tib) %>% affy_to_hgnc() -> gene_names
 gene_names
@@ -233,5 +255,16 @@ this plot.
 ```{r boxplot from long format data using ggplot2, echo=FALSE}
 library(ggplot2)
 
-
+ggplot(long_format_data, aes(x = hgnc, y = values, fill = gene_set)) +
+  geom_boxplot() +
+  scale_fill_manual(values = c("good" = "#4DAF4A", "bad" = "#E41A1C")) +
+  labs(
+    title = "Gene Expression Levels of Interesting Gene Sets",
+    subtitle = "Comparing Good vs. Bad Category Genes",
+    x = "HGNC Gene Symbol",
+    y = "Expression Value (log2 Intensity)",
+    fill = "Gene Category"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
