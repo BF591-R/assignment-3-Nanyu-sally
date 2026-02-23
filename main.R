@@ -138,21 +138,17 @@ affy_to_hgnc <- function(affy_vector) {
 #' `1 202860_at   DENND4B good        7.16      ...`
 #' `2 204340_at   TMEM187 good        6.40      ...`
 reduce_data <- function(expr_tibble, names_ids, good_genes, bad_genes){
-  joined_tab <- expr_tibble %>%
+  result <- expr_tibble %>%
     dplyr::inner_join(names_ids, by = c("probe" = colnames(names_ids)[1])) %>%
-    dplyr::rename(hgnc = hgnc_symbol) 
- 
-  result <- joined_tab %>%
     dplyr::mutate(
       gene_set = dplyr::case_when(
-        hgnc %in% good_genes ~ "good",
-        hgnc %in% bad_genes  ~ "bad",
-        TRUE ~ NA_character_ 
+        hgnc_symbol %in% good_genes ~ "good",
+        hgnc_symbol %in% bad_genes  ~ "bad",
+        TRUE ~ NA_character_
       )
     ) %>%
-    
     dplyr::filter(!is.na(gene_set)) %>%
-    dplyr::select(probe, hgnc, gene_set, everything())
+    dplyr::select(probe, hgnc_symbol, gene_set, dplyr::everything())
     return(result)
 }
 
@@ -169,9 +165,9 @@ reduce_data <- function(expr_tibble, names_ids, good_genes, bad_genes){
 convert_to_long <- function(tibble) {
   result <- tibble %>%
     tidyr::pivot_longer(
-      cols = -c(probe, hgnc, gene_set),
+      cols = -c(1, 2, 3), 
       names_to = "sample",
-      values_to = "values"
+      values_to = "value" 
     )
     return(result)
 }
